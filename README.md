@@ -1,8 +1,8 @@
 # ResumeForge
 
-Private, local resume tailoring. Your master resume and generated versions are stored in `data/resumeforge.json` on this Mac. Ollama runs the AI model locally.
+Resume tailoring. Your master resume and generated versions are stored in `data/resumeforge.json` on this Mac. The AI model runs either locally (Ollama, fully private) or via the Groq API (cloud, faster — your resume content is sent to Groq for generation).
 
-## Run it
+## Run it — local (Ollama, private)
 
 ```bash
 cd ~/Desktop/ResumeForge
@@ -18,10 +18,18 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
-For an 8 GB MacBook Air, use the default `qwen2.5:7b`; close memory-heavy apps before generating. To use a lighter model:
+For an 8 GB MacBook Air, the default `qwen2.5:7b` can be slow/heavy; close memory-heavy apps before generating, or use a lighter model:
 
 ```bash
 OLLAMA_MODEL=qwen2.5:3b npm run dev
+```
+
+## Run it — cloud (Groq, faster, not private)
+
+Set `GROQ_API_KEY` in `.env.local` (get a free key at [console.groq.com](https://console.groq.com)). When this is set, the app uses Groq instead of Ollama automatically — **your resume and job description are sent to Groq's API**, not kept local. Optionally set `GROQ_MODEL` to override the default (`llama-3.3-70b-versatile`).
+
+```bash
+npm run dev
 ```
 
 ## Output

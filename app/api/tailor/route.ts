@@ -18,6 +18,34 @@ function resumeContent(source: string) {
     .slice(0, 26000);
 }
 
+async function generateWithGroq(prompt: string): Promise<string> {
+  const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.GROQ_API_KEY}` },
+    body: JSON.stringify({
+      model: process.env.GROQ_MODEL || "llama-3.3-70b-versatile",
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0.1,
+      max_tokens: 1400,
+    }),
+    signal: AbortSignal.timeout(60000),
+  });
+  if (!response.ok) throw new Error(`Groq returned ${response.status}`);
+  const result = (await response.json()) as { choices?: Array<{ message?: { content?: string } }> };
+  const output = result.choices?.[0]?.message?.content?.trim();
+  if (!output) throw new Error("Groq returned an empty response.");
+  return output;
+}
+
+async function generateWithOllama(prompt: string): Promise<string> {
+  const response = await fetch("http://127.0.0.1:11434/api/generate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ model: process.env.OLLAMA_MODEL || "qwen2.5:7b", prompt, stream: false, keep_alive: "10m", options: { temperature: 0.1, num_ctx: 8192, num_predict: 1400 } }), signal: AbortSignal.timeout(300000) });
+  if (!response.ok) throw new Error(`Ollama returned ${response.status}`);
+  const result = (await response.json()) as { response?: string };
+  const output = result.response?.trim();
+  if (!output) throw new Error("Ollama returned an empty response.");
+  return output;
+}
+
 export async function POST(request: Request) {
   const { company = "", role = "", jobDescription = "", keywords = "" } = await request.json();
   const store = await getStore();
@@ -25,16 +53,13 @@ export async function POST(request: Request) {
   if (!jobDescription.trim()) return Response.json({ error: "Add the job description." }, { status: 400 });
   const prompt = `${system}\n\nMASTER RESUME:\n${resumeContent(store.masterResume)}\n\nTARGET COMPANY: ${company}\nTARGET ROLE: ${role}\n\nJOB DESCRIPTION:\n${jobDescription}\n\nPASTED ATS KEYWORDS:\n${keywords}`;
   try {
-    const response = await fetch("http://127.0.0.1:11434/api/generate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ model: process.env.OLLAMA_MODEL || "qwen2.5:7b", prompt, stream: false, keep_alive: "10m", options: { temperature: 0.1, num_ctx: 8192, num_predict: 1400 } }), signal: AbortSignal.timeout(300000) });
-    if (!response.ok) throw new Error(`Ollama returned ${response.status}`);
-    const result = await response.json() as { response?: string };
-    const output = result.response?.trim();
-    if (!output) throw new Error("Ollama returned an empty response.");
+    const output = process.env.GROQ_API_KEY ? await generateWithGroq(prompt) : await generateWithOllama(prompt);
     const application = { id: crypto.randomUUID(), company, role, jobDescription, keywords, output, ...calculateAtsScore(keywords, output), createdAt: new Date().toISOString() };
     store.applications.unshift(application); await saveStore(store);
     return Response.json({ application });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
-    return Response.json({ error: `Could not reach Ollama. Start it, install the selected model, then try again. (${message})` }, { status: 503 });
+    const hint = process.env.GROQ_API_KEY ? "Check your Groq API key and connection." : "Start Ollama, install the selected model, then try again.";
+    return Response.json({ error: `Could not generate a resume. ${hint} (${message})` }, { status: 503 });
   }
 }
