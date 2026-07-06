@@ -13,6 +13,16 @@ Most resume tailoring tools either paste your resume into a generic chatbot (no 
 
 ---
 
+## Screenshots
+
+| Master resume + tailor form | Generated draft + ATS score |
+|:-:|:-:|
+| <img src="screenshots/00_hero.png" width="430" /> | <img src="screenshots/01_generated_draft.png" width="430" /> |
+
+Left: paste your master resume once (saved locally, never sent to a cloud AI service unless you opt into Groq), then paste a job description and target keywords. Right: the generated draft — one page, grounded only in the master resume's real experience — next to the keyword match score and PDF/LaTeX/text export buttons.
+
+---
+
 ## Features
 
 ### Tailoring
