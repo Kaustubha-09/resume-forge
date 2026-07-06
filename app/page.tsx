@@ -22,7 +22,24 @@ export default function Home() {
   const [ats, setAts] = useState<{ score: number; matchedKeywords: string[]; missingKeywords: string[] } | null>(null);
   const [applications, setApplications] = useState<Application[]>([]);
   const [busy, setBusy] = useState(false);
+  const [pdfBusy, setPdfBusy] = useState(false);
   const [notice, setNotice] = useState("");
+
+  async function downloadPdf() {
+    setPdfBusy(true); setNotice("");
+    try {
+      const response = await fetch("/api/pdf", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ content: result }) });
+      if (!response.ok) { const data = await response.json(); setNotice(data.error || "Could not generate a PDF."); return; }
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a"); anchor.href = url; anchor.download = "Kaustubha_Eluri_Resume.pdf"; anchor.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      setNotice("Could not reach the PDF export service.");
+    } finally {
+      setPdfBusy(false);
+    }
+  }
 
   useEffect(() => { void (async () => {
     const [masterResponse, appsResponse] = await Promise.all([fetch("/api/master"), fetch("/api/applications")]);
@@ -69,7 +86,7 @@ export default function Home() {
       </section>
     </div>
     {notice && <p className="notice">{notice}</p>}
-    {result && <section className="card result"><div className="card-heading"><div><p className="step">03 — GENERATED DRAFT</p><h2>{role || "Tailored"} resume</h2></div><div className="actions"><button className="small" onClick={() => download("Kaustubha_Eluri_Resume.tex", toLatex(result))}>Download LaTeX</button><button className="small" onClick={() => download("Kaustubha_Eluri_Resume.txt", result)}>Download text</button></div></div>{ats && <div className="ats"><div className="score"><strong>{ats.score}</strong><span>ATS match score</span></div><div><b>{ats.matchedKeywords.length} matched</b><p>{ats.matchedKeywords.join(", ") || "No pasted keywords found."}</p></div><div><b>{ats.missingKeywords.length} missing</b><p>{ats.missingKeywords.join(", ") || "All pasted keywords are present."}</p></div></div>}<textarea className="output" value={result} onChange={(e) => setResult(e.target.value)} /><p className="hint">This score measures pasted Simplify keyword coverage, not an employer ATS decision. Review every claim before applying.</p></section>}
+    {result && <section className="card result"><div className="card-heading"><div><p className="step">03 — GENERATED DRAFT</p><h2>{role || "Tailored"} resume</h2></div><div className="actions"><button className="small" onClick={downloadPdf} disabled={pdfBusy}>{pdfBusy ? "Compiling…" : "Download PDF"}</button><button className="small" onClick={() => download("Kaustubha_Eluri_Resume.tex", toLatex(result))}>Download LaTeX</button><button className="small" onClick={() => download("Kaustubha_Eluri_Resume.txt", result)}>Download text</button></div></div>{ats && <div className="ats"><div className="score"><strong>{ats.score}</strong><span>ATS match score</span></div><div><b>{ats.matchedKeywords.length} matched</b><p>{ats.matchedKeywords.join(", ") || "No pasted keywords found."}</p></div><div><b>{ats.missingKeywords.length} missing</b><p>{ats.missingKeywords.join(", ") || "All pasted keywords are present."}</p></div></div>}<textarea className="output" value={result} onChange={(e) => setResult(e.target.value)} /><p className="hint">This score measures pasted Simplify keyword coverage, not an employer ATS decision. Review every claim before applying.</p></section>}
     {applications.length > 0 && <section className="history"><p className="step">SAVED VERSIONS</p><h2>Application history</h2><div className="history-list">{applications.map((application) => <button key={application.id} onClick={() => { setResult(application.output); setAts({ score: application.score ?? 0, matchedKeywords: application.matchedKeywords ?? [], missingKeywords: application.missingKeywords ?? [] }); }}><strong>{application.role || "Untitled role"}</strong><span>{application.company || "No company"} · {application.score ?? 0}% match · {new Date(application.createdAt).toLocaleDateString()}</span></button>)}</div></section>}
   </main>;
 }
