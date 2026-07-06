@@ -51,13 +51,13 @@ Left: paste your master resume once (saved locally, never sent to a cloud AI ser
                 ┌──────────────────────────────┐
                 │   Next.js 15 app/page.tsx    │
                 │   (master resume, tailor     │
-                │   form, history, PDF button)│
-                └───────────────┬───────────────┘
+                │   form, history, PDF button) │
+                └───────────────┬──────────────┘
                                 │ fetch
                                 ▼
-        ┌───────────────────────────────────────────┐
-        │  API routes (app/api/*)                    │
-        │  /api/master   — read/write master resume  │
+        ┌─────────────────────────────────────────────┐
+        │  API routes (app/api/*)                     │
+        │  /api/master   — read/write master resume   │
         │  /api/tailor   — generate + ATS score       │
         │  /api/pdf      — spawn tectonic, stream PDF │
         │  /api/applications — history list           │
@@ -65,9 +65,9 @@ Left: paste your master resume once (saved locally, never sent to a cloud AI ser
                │                          │
                ▼                          ▼
    ┌───────────────────────┐   ┌───────────────────────┐
-   │ generateWithOllama()  │   │ generateWithGroq()     │
-   │ localhost:11434       │   │ api.groq.com (cloud)   │
-   │ (default)             │   │ (if GROQ_API_KEY set)  │
+   │ generateWithOllama()  │   │ generateWithGroq()    │
+   │ localhost:11434       │   │ api.groq.com (cloud)  │
+   │ (default)             │   │ (if GROQ_API_KEY set) │
    └───────────────────────┘   └───────────────────────┘
                │                          │
                └────────────┬─────────────┘
