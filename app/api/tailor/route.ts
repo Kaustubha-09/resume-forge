@@ -47,7 +47,9 @@ async function generateWithOllama(prompt: string): Promise<string> {
 }
 
 export async function POST(request: Request) {
-  const { company = "", role = "", jobDescription = "", keywords = "" } = await request.json();
+  let body: { company?: string; role?: string; jobDescription?: string; keywords?: string };
+  try { body = await request.json(); } catch { return Response.json({ error: "Invalid request body." }, { status: 400 }); }
+  const { company = "", role = "", jobDescription = "", keywords = "" } = body;
   const store = await getStore();
   if (!store.masterResume) return Response.json({ error: "Save your master resume first." }, { status: 400 });
   if (!jobDescription.trim()) return Response.json({ error: "Add the job description." }, { status: 400 });
